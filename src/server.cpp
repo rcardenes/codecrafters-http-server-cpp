@@ -1,5 +1,5 @@
 #include <string_view>
-#include <expected>
+#include "expected.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -27,14 +27,14 @@ auto setup_server_socket() -> std::expected<int, socket_error>
 {
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (server_fd < 0) {
-   return std::unexpected(socket_error::cant_create_socket);
+   return std::unexpected_23(socket_error::cant_create_socket);
   }
 
   // Since the tester restarts your program quite often, setting REUSE_PORT
   // ensures that we don't run into 'Address already in use' errors
   int reuse = 1;
   if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) < 0) {
-    return std::unexpected(socket_error::setsockopt);
+    return std::unexpected_23(socket_error::setsockopt);
   }
 
   struct sockaddr_in server_addr;
@@ -43,12 +43,12 @@ auto setup_server_socket() -> std::expected<int, socket_error>
   server_addr.sin_port = htons(DEFAULT_PORT);
 
   if (bind(server_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) != 0) {
-      return std::unexpected(socket_error::cant_bind);
+      return std::unexpected_23(socket_error::cant_bind);
   }
 
   int connection_backlog = 5;
   if (listen(server_fd, connection_backlog) != 0) {
-      return std::unexpected(socket_error::cant_listen);
+      return std::unexpected_23(socket_error::cant_listen);
   }
 
   return server_fd;
@@ -59,14 +59,17 @@ int main(int argc, char **argv) {
       // Serve...
       auto server_fd = *server;
 
-      struct sockaddr_in client_addr;
-      int client_addr_len = sizeof(client_addr);
+      while (true) {
+          struct sockaddr_in client_addr;
+          int client_addr_len = sizeof(client_addr);
 
-      std::cout << "Waiting for a client to connect...\n"sv;
+          std::cout << "Waiting for a client to connect...\n"sv;
 
-      accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
-      std::cout << "Client connected\n"sv;
+          accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
+          std::cout << "Client connected\n"sv;
+      }
 
+      // Won't ever happen (sad!)
       close(server_fd);
   } else {
       switch (server.error()) {
