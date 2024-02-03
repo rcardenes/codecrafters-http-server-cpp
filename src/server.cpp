@@ -65,8 +65,15 @@ int main(int argc, char **argv) {
 
           std::cout << "Waiting for a client to connect...\n"sv;
 
-          accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
-          std::cout << "Client connected\n"sv;
+          auto new_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
+          // Assume we didn't get -1
+          if (new_fd != -1) {
+              std::cout << "Client connected\n"sv;
+              if (send(new_fd, (const void *)VANILLA_200_OK_RESPONSE.data(), VANILLA_200_OK_RESPONSE.length(), 0) == -1) {
+                  std::cout << "Ouch, couldn't send\n"sv;
+              }
+              close(new_fd);
+          }
       }
 
       // Won't ever happen (sad!)
